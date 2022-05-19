@@ -3,31 +3,35 @@ let target: ComputedFunction | null = null
 export const store: ClassDecorator = (target: any): typeof target => class extends target {
 	constructor (...args: Array<any>) {
 		super(...args)
-		const dependensies = new Map<String, Dep>()
-
-		Object.keys(this).forEach(key => dependensies.set(key, new Dep()))
-
-		console.log(Object.keys(this))
+		const dependencies = new DependenciesMap()
 		return new Proxy(this, {
 			get: function(target: Record<string, any>, key: string) {
-				dependensies.get(key)?.depend()
+				dependencies.get(key).depend()
 				return target[key]
 			},
 			set: function(target: Record<string, any>, key: string, value: any) {
 				target[key] = value
-				dependensies.get(key)?.notify()
+				dependencies.get(key).notify()
 				return true
 			}
 		})
 	}
 }
 
-export function watcher(fn: ComputedFunction){
+export function watcher(fn: ComputedFunction) {
+	if (target) throw new Error('Target not empty on watcher creation')
 	target = fn
 	target()
 	target = null
 }
-
+class DependenciesMap extends Map {
+	get(key: string): Dep {
+		if (!super.has(key)) {
+			super.set(key, new Dep())
+		}
+		return super.get(key)
+	}
+}
 class Dep {
 	#subscribers = new Set<ComputedFunction>()
 	constructor () {
@@ -38,7 +42,10 @@ class Dep {
 		}
 	}
 	notify () {
-		this.#subscribers.forEach(sub => sub())
+		// this.#subscribers.forEach(sub => sub)
+		// subscribe on every run
+		// TODO: unsubscribe from redundant
+		this.#subscribers.forEach(sub => watcher(sub))
 	}
 }
 
