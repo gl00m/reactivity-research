@@ -1,28 +1,47 @@
-export function store(targetClass: any) {
-	console.log('store: ', targetClass)
-	// class wrapper
-	return new Proxy(targetClass, {
-		construct: (Target: new (...args: Array<unknown>) => typeof targetClass, args: Array<unknown>) => new Proxy(new Target(...args), handler),
-	})
-}
+type ComputedFunction = () => void
+let target: ComputedFunction | null = null
+export const store: ClassDecorator = (target: any): typeof target => class extends target {
+	constructor (...args: Array<any>) {
+		super(...args)
+		const dependensies = new Map<String, Dep>()
 
+		Object.keys(this).forEach(key => dependensies.set(key, new Dep()))
 
-const handler = {
-	get: function(t: Record<string, any>, key: string) {
-		console.log(`Getting ${key}: ${t[key]}`)
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		//@ts-ignore
-		return t[key]
-	},
-	set: function(t: Record<string, any>, key: string, value: any) {
-		console.log(`Setting ${key} to: ${value}`)
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		//@ts-ignore
-		t[key] = value
-		// _value = value
-		return true
+		console.log(Object.keys(this))
+		return new Proxy(this, {
+			get: function(target: Record<string, any>, key: string) {
+				dependensies.get(key)?.depend()
+				return target[key]
+			},
+			set: function(target: Record<string, any>, key: string, value: any) {
+				target[key] = value
+				dependensies.get(key)?.notify()
+				return true
+			}
+		})
 	}
 }
+
+export function watcher(fn: ComputedFunction){
+	target = fn
+	target()
+	target = null
+}
+
+class Dep {
+	#subscribers = new Set<ComputedFunction>()
+	constructor () {
+	}
+	depend () {
+		if (target && !this.#subscribers.has(target)){
+			this.#subscribers.add(target)
+		}
+	}
+	notify () {
+		this.#subscribers.forEach(sub => sub())
+	}
+}
+
 export function observable(target: object, key: string) {
 	console.log('observable1: ', target, key)
 	// let internalValue: unknown
