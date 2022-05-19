@@ -37,10 +37,11 @@
 
 <script lang="ts">
 	import {Component, Prop, Vue} from 'vue-property-decorator'
-
-@Component
+	import Test from "@/models/Test"
+		@Component
 	export default class HelloWorld extends Vue {
   @Prop() private msg!: string;
+		test = Test
 	}
 </script>
 
