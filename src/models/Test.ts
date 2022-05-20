@@ -1,8 +1,8 @@
-import {observable, store, watcher} from "@/lib/observer"
+import {store} from "@/lib/observer"
+import {watcher} from "@/lib/observer/watcher"
 
 @store
 export default class Test {
-	@observable
 	public a = 10
 	public b = 5
 	public c!: number
@@ -10,7 +10,6 @@ export default class Test {
 	public condition = 0
 	init() {
 		watcher(() => {
-			console.log('w')
 			if (t.condition === 0) {
 				t.c = t.a + t.b
 			} else {
@@ -31,8 +30,10 @@ t.condition = 1
 console.log(t.c)
 t.d = 2
 console.log(t.c)
-t.b = 6
-t.b = 6
+t.b = 1
+t.b = 1
+t.b = 1
+t.b = 1
 // const t2 = new Test()
 // console.log('ddd1: ', t.ddd)
 // t.ddd = 1
